@@ -25,18 +25,48 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Litterateur Café',
-          style: GoogleFonts.pacifico(
-            fontSize: 28,
-            color: Colors.white,
+        title: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Text(
+            'Litterateur Café',
+            style: GoogleFonts.pacifico(
+              fontSize: 28,
+              color: Colors.white,
+            ),
           ),
         ),
         backgroundColor: Colors.brown[400],
@@ -58,13 +88,16 @@ class HomePage extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Welcome to the hangout spot for book lovers and coffee enthusiasts!',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.brown.shade800,
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: Text(
+                  'Welcome to the hangout spot for book lovers and coffee enthusiasts!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.brown.shade800,
+                  ),
                 ),
               ),
             ),
@@ -89,79 +122,130 @@ class HomePage extends StatelessWidget {
               'Iced Caramel Macchiato',
               'assets/images/cold_coffee.jpg',
               'A perfect blend of espresso, milk, and vanilla syrup, topped with a caramel drizzle.',
+              0,
             ),
             _buildMenuItem(
               context,
               'Masala Chai',
               'assets/images/masala_chai.jpg',
               'A traditional Indian tea with a mix of aromatic spices and herbs.',
+              1,
             ),
             _buildMenuItem(
               context,
               'Samosa Platter',
               'assets/images/samosa.jpg',
               'Crispy pastries filled with spiced potatoes and peas, served with chutney.',
+              2,
             ),
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Opening cart...')),
+          );
+        },
+        backgroundColor: Colors.brown[700],
+        child: const Icon(Icons.shopping_cart, color: Colors.white),
+      ),
     );
   }
 
-  Widget _buildMenuItem(BuildContext context, String title, String imagePath, String description) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
-            spreadRadius: 2,
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+  Widget _buildMenuItem(BuildContext context, String title, String imagePath, String description, int index) {
+    final animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Interval(
+          (0.1 * index),
+          (0.6 + 0.1 * index),
+          curve: Curves.easeOut,
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(15),
-              topRight: Radius.circular(15),
-            ),
-            child: Image.asset(
-              imagePath,
-              height: 200,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
+    );
+
+    return FadeTransition(
+      opacity: animation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.5),
+          end: Offset.zero,
+        ).animate(animation),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.3),
+                spreadRadius: 2,
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(15),
+                  topRight: Radius.circular(15),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
+                child: Image.asset(
+                  imagePath,
+                  height: 200,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                 ),
-              ],
-            ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            description,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.add_shopping_cart, color: Colors.brown.shade700, size: 30),
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('$title added to cart!'),
+                            backgroundColor: Colors.brown.shade600,
+                          ),
+                        );
+                      },
+                    )
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
